@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>North Production Optimum R/D Ratio Calculator for Pipe Bends</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        .slider-value {
+            min-width: 80px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">GO-SEND Optimum R/D Ratio Calculator</h1>
+            <p class="text-md text-gray-600 mt-2">For Pipe Bends in Water Overboard line North Production PHE OSES</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Input Controls Column -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-semibold mb-6 border-b pb-3">Input Parameters</h2>
+
+                <!-- Flowrate -->
+                <div class="input-group">
+                    <label for="flowrate" class="block text-sm font-medium text-gray-700 mb-1">Flowrate (bbl/day)</label>
+                    <div class="flex items-center space-x-4">
+                        <input type="range" id="flowrate-slider" min="10000" max="200000" value="50000" step="1000" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <input type="number" id="flowrate-input" min="10000" max="200000" value="50000" class="slider-value w-28 text-center bg-gray-100 border border-gray-300 rounded-md p-2">
+                    </div>
+                </div>
+
+                <!-- Water Cut -->
+                <div class="input-group">
+                    <label for="watercut" class="block text-sm font-medium text-gray-700 mb-1">Water Cut (% vol)</label>
+                     <div class="flex items-center space-x-4">
+                        <input type="range" id="watercut-slider" min="0" max="100" value="20" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <input type="number" id="watercut-input" min="0" max="100" value="20" class="slider-value w-28 text-center bg-gray-100 border border-gray-300 rounded-md p-2">
+                    </div>
+                </div>
+
+                <!-- Fluid Densities -->
+                <div class="grid grid-cols-2 gap-4 input-group">
+                    <div>
+                        <label for="water-density" class="block text-sm font-medium text-gray-700">Water Density (kg/m³)</label>
+                        <input type="number" id="water-density" value="998" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="crude-density" class="block text-sm font-medium text-gray-700">Crude Density (kg/m³)</label>
+                        <input type="number" id="crude-density" value="870" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Pipe Size and Schedule -->
+                <div class="grid grid-cols-2 gap-4 input-group">
+                    <div>
+                        <label for="nps" class="block text-sm font-medium text-gray-700">Nominal Pipe Size (NPS)</label>
+                        <select id="nps" class="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="schedule" class="block text-sm font-medium text-gray-700">Pipe Schedule</label>
+                        <select id="schedule" class="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option>STD</option>
+                            <option>S-40</option>
+                            <option>S-80</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="calculate-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                    Calculate
+                </button>
+            </div>
+
+            <!-- Results and Chart Column -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Results & Analysis</h2>
+                
+                <!-- Optimum R/D Results -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-center">
+                    <div class="bg-indigo-50 p-4 rounded-lg">
+                        <h3 class="text-sm font-medium text-indigo-800 uppercase">Optimum R/D Ratio</h3>
+                        <p id="optimum-rd" class="text-3xl font-bold text-indigo-900 mt-1">--</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h3 class="text-sm font-medium text-green-800 uppercase">Pressure Drop at Optimum R/D (psi)</h3>
+                        <p id="pressure-drop" class="text-3xl font-bold text-green-900 mt-1">--</p>
+                    </div>
+                </div>
+
+                <!-- Sensitivity Analysis Chart -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Sensitivity Analysis: R/D Ratio vs. Pressure Drop</h3>
+                    <div class="h-80 md:h-96">
+                        <canvas id="pressureDropChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assumptions Section -->
+        <div class="mt-8 bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-xl font-semibold mb-3">Calculation Assumptions</h2>
+            <ul class="list-disc list-inside text-gray-600 space-y-1">
+                <li>The calculation is for a standard 90° pipe bend.</li>
+                <li>Bend loss coefficient (K) is determined using established empirical formulas (based on Crane Technical Paper 410 methodology).</li>
+                <li>Fluid viscosities are assumed: Water at 1 cP (0.001 Pa.s) and Crude Oil at 10 cP (0.01 Pa.s).</li>
+                <li>Pipe roughness is assumed to be 0.045 mm (for commercial steel).</li>
+                <li>The Churchill equation is used to calculate the friction factor, which is valid for all flow regimes.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        // Pipe dimensions (NPS in inches, ID in mm) based on ASME B36.10M
+        const pipeData = {
+            "2":  { "STD": 52.5, "S-40": 52.5, "S-80": 49.2 },
+            "3":  { "STD": 77.9, "S-40": 77.9, "S-80": 73.7 },
+            "4":  { "STD": 102.3,"S-40": 102.3,"S-80": 97.2 },
+            "6":  { "STD": 154.1,"S-40": 154.1,"S-80": 146.3},
+            "8":  { "STD": 202.7,"S-40": 202.7,"S-80": 193.7},
+            "10": { "STD": 254.5,"S-40": 254.5,"S-80": 242.9},
+            "12": { "STD": 303.2,"S-40": 303.2,"S-80": 288.9},
+            "14": { "STD": 333.3,"S-40": 333.3,"S-80": 317.5},
+            "16": { "STD": 381.0,"S-40": 381.0,"S-80": 365.1},
+            "18": { "STD": 428.6,"S-40": 428.6,"S-80": 412.7},
+            "20": { "STD": 477.8,"S-40": 477.8,"S-80": 457.2}
+        };
+
+        // --- DOM ELEMENTS ---
+        const flowrateSlider = document.getElementById('flowrate-slider');
+        const flowrateInput = document.getElementById('flowrate-input');
+        const watercutSlider = document.getElementById('watercut-slider');
+        const watercutInput = document.getElementById('watercut-input');
+        const waterDensityInput = document.getElementById('water-density');
+        const crudeDensityInput = document.getElementById('crude-density');
+        const npsSelect = document.getElementById('nps');
+        const scheduleSelect = document.getElementById('schedule');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const optimumRdEl = document.getElementById('optimum-rd');
+        const pressureDropEl = document.getElementById('pressure-drop');
+        const chartCanvas = document.getElementById('pressureDropChart');
+        
+        let pressureChart;
+
+        // --- INITIALIZATION ---
+        function initialize() {
+            // Populate NPS dropdown
+            Object.keys(pipeData).forEach(nps => {
+                const option = document.createElement('option');
+                option.value = nps;
+                option.textContent = `${nps} inch`;
+                npsSelect.appendChild(option);
+            });
+            npsSelect.value = "8"; // Default selection
+
+            // Setup event listeners
+            flowrateSlider.addEventListener('input', () => flowrateInput.value = flowrateSlider.value);
+            flowrateInput.addEventListener('input', () => flowrateSlider.value = flowrateInput.value);
+            watercutSlider.addEventListener('input', () => watercutInput.value = watercutSlider.value);
+            watercutInput.addEventListener('input', () => watercutSlider.value = watercutInput.value);
+            calculateBtn.addEventListener('click', performCalculation);
+            
+            // Initial calculation on load
+            performCalculation();
+        }
+
+        // --- CALCULATIONS ---
+
+        // Churchill friction factor equation
+        function getFrictionFactor(reynolds, roughness, diameter) {
+            if (reynolds < 2300) {
+                return 64 / reynolds; // Laminar flow
+            }
+            const A = Math.pow(2.457 * Math.log(1 / (Math.pow(7 / reynolds, 0.9) + 0.27 * (roughness / diameter))), 16);
+            const B = Math.pow(37530 / reynolds, 16);
+            const f = 8 * Math.pow(Math.pow(8 / reynolds, 12) + 1 / Math.pow(A + B, 1.5), 1 / 12);
+            return f;
+        }
+
+        // Bend loss coefficient (K) - simplified from Crane 410 for 90-deg bends
+        function getBendLossCoefficient(rdRatio, frictionFactor) {
+            // This is a simplified correlation. A more complex model might depend on Re.
+            // K = (n * f_T) + K_b'
+            // For a 90-deg bend, n is related to R/D.
+            // This formula approximates the K-factor for turbulent flow.
+            const k_base = 0.19 + 0.25 / Math.pow(rdRatio, 2.5); // A curve fit for K
+            return k_base;
+        }
+
+        function performCalculation() {
+            // 1. Get all inputs
+            const flowrateBBLday = parseFloat(flowrateInput.value);
+            const waterCut = parseFloat(watercutInput.value) / 100; // as fraction
+            const waterDensity = parseFloat(waterDensityInput.value);
+            const crudeDensity = parseFloat(crudeDensityInput.value);
+            const nps = npsSelect.value;
+            const schedule = scheduleSelect.value;
+            
+            // 2. Constants and Conversions
+            const waterViscosity = 0.001; // Pa.s
+            const crudeViscosity = 0.010; // Pa.s
+            const pipeRoughness = 0.000045; // meters
+            const flowrateM3s = flowrateBBLday * 0.158987 / (24 * 3600); // bbl/day to m³/s
+            
+            // 3. Pipe Properties
+            const pipeIdMM = pipeData[nps][schedule];
+            const pipeIdM = pipeIdMM / 1000;
+            const pipeArea = Math.PI * Math.pow(pipeIdM / 2, 2);
+
+            // 4. Fluid Properties
+            const mixtureDensity = (waterDensity * waterCut) + (crudeDensity * (1 - waterCut));
+            const mixtureViscosity = (waterViscosity * waterCut) + (crudeViscosity * (1 - waterCut)); // Simple mixing rule
+
+            // 5. Flow Characteristics
+            const velocity = flowrateM3s / pipeArea;
+            const reynolds = (mixtureDensity * velocity * pipeIdM) / mixtureViscosity;
+            const frictionFactor = getFrictionFactor(reynolds, pipeRoughness, pipeIdM);
+
+            // 6. Sensitivity Analysis Loop
+            const rdRatios = [];
+            const pressureDropsPsi = [];
+            const rdRange = [1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 20];
+
+            for (const rd of rdRange) {
+                // Calculate bend length
+                const bendRadius = rd * pipeIdM;
+                const bendLength = (Math.PI / 2) * bendRadius;
+
+                // Calculate pressure drop components
+                const frictionLossPa = frictionFactor * (bendLength / pipeIdM) * (mixtureDensity * Math.pow(velocity, 2) / 2);
+                const bendLossCoefficient = getBendLossCoefficient(rd, frictionFactor);
+                const minorLossPa = bendLossCoefficient * (mixtureDensity * Math.pow(velocity, 2) / 2);
+                
+                const totalPressureDropPa = frictionLossPa + minorLossPa;
+                const totalPressureDropPsi = totalPressureDropPa * 0.000145038;
+
+                rdRatios.push(rd);
+                pressureDropsPsi.push(totalPressureDropPsi);
+            }
+
+            // 7. Find Optimum R/D
+            let minPressureDrop = Infinity;
+            let optimumRd = 0;
+            for (let i = 0; i < pressureDropsPsi.length; i++) {
+                if (pressureDropsPsi[i] < minPressureDrop) {
+                    minPressureDrop = pressureDropsPsi[i];
+                    optimumRd = rdRatios[i];
+                }
+            }
+            
+            // 8. Update UI
+            optimumRdEl.textContent = optimumRd;
+            pressureDropEl.textContent = minPressureDrop.toFixed(2);
+            updateChart(rdRatios, pressureDropsPsi, optimumRd);
+        }
+
+        // --- CHARTING ---
+        function updateChart(labels, data, optimumRd) {
+            if (pressureChart) {
+                pressureChart.destroy();
+            }
+            
+            const pointBackgroundColors = labels.map(label => label === optimumRd ? 'rgba(255, 99, 132, 1)' : 'rgba(75, 192, 192, 1)');
+            const pointRadius = labels.map(label => label === optimumRd ? 8 : 4);
+
+            const ctx = chartCanvas.getContext('2d');
+            pressureChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pressure Drop (psi)',
+                        data: data,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true,
+                        pointBackgroundColor: pointBackgroundColors,
+                        pointRadius: pointRadius,
+                        pointHoverRadius: 10,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'R/D Ratio',
+                                font: { size: 14 }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Pressure Drop (psi)',
+                                font: { size: 14 }
+                            },
+                            beginAtZero: false
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return `R/D Ratio: ${context[0].label}`;
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(3) + ' psi';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index',
+                    },
+                }
+            });
+        }
+
+        // --- RUN ---
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>
